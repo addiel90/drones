@@ -56,6 +56,19 @@ def register_drone():
     except Exception as e:
         return make_response(jsonify({"message":"An exception occurred: {}".format(str(e))}), 400)
   
+@app.route("/drones", methods=['DELETE'])
+def delete_drone():
+    try:
+        request_json=request.json
+        conexion=get_conexion()              
+        _helper=Helper(conexion)  
+        drone,message=_helper.helper_delete_drone(request_json)
+        if drone:
+            return make_response(jsonify({"message":message}), 200)
+        else:
+            return make_response(jsonify({"message":message}), 400)
+    except Exception as e:
+        return make_response(jsonify({"message":"An exception occurred: {}".format(str(e))}), 400)
     
 def page_not_found(error):
     return "<h1>The page you are trying to access does not exist...</h1>", 404

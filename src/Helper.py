@@ -108,4 +108,27 @@ class Helper:
                         return False,message
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
+            return False,message
+        
+    def helper_delete_drone(self,request_json):
+        try:
+            if "serial_number" not in request_json or type(request_json["serial_number"]) is not str or len(request_json["serial_number"])>100:
+                message = "The serial_number field is required, it must be of type str and have a maximum of 100 characters."
+                return False,message                   
+            else:
+                with self.mysql.cursor() as cursor:
+                    sql = "DELETE FROM drone WHERE serial_number = '{}'".format(request_json["serial_number"])
+                    cursor.execute(sql)
+                    response=cursor.rowcount
+                    if response == 0:                    
+                        self.mysql.close()
+                        message = "The drone with serial_number '{}' does not exist.".format(request_json["serial_number"])
+                        return False,message
+                    else:                    
+                        self.mysql.commit()
+                        self.mysql.close()
+                        message = "The drone has been removed."
+                        return True,message
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
             return False,message  
