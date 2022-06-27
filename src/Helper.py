@@ -209,3 +209,48 @@ class Helper:
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
             return False,message
+        
+    def helper_get_available_drones(self, request_json):
+        try:         
+            code_ex=r"(^[A-Z0-9_]+$)"
+            if "medication_codes" not in request_json or type(request_json['medication_codes']) is not str or len(request_json['medication_codes']) in (0,2):
+                message = "The medication_codes field is required, it must be of type str and not be empty."
+                return {},message            
+            code_list=list(json.loads(request_json['medication_codes']))
+            for code in code_list:
+                if type(code) is not str or len(code)==0:
+                    message = "The code field is required, it must be of type str and not be empty. Value: '{}'".format(str(code))
+                    return {},message
+                elif re.match(code_ex, code) is None:
+                    message = "The value '{}' allowed only upper case letters, underscore and numbers.".format(str(code))
+                    return {},message
+            code_tuple = tuple(code_list) 
+            with self.mysql.cursor() as cursor:
+                sql = """SELECT SUM(weight) FROM medication WHERE code in {}""".format(str(code_tuple))
+                cursor.execute(sql)
+                response=cursor.fetchone()
+                if response is None or response == 0:                   
+                    self.mysql.close()   
+                    message = "The total weight of the load has not been completed."
+                    return {},message
+                else:
+                    weight_total=int(response[0]) 
+                    sql = """SELECT * FROM drone WHERE battery_capacity > 24 and weight_limit >= {} 
+                    and state = 'LOADING'""".format(weight_total)
+                    cursor.execute(sql)
+                    response=cursor.fetchall()
+                    drones=[]
+                    if len(response)!=0:
+                        for row in response:
+                            drone = {"serial_number":row[0], "model":row[1],"weight_limit":row[2],"battery_capacity":row[3],"state":row[4]}
+                            drones.append(drone) 
+                        self.mysql.close()
+                        drone = {"weight_load":weight_total, "available_drones":drones}
+                        message = "Available drones for loading."
+                        return drone,message
+                    else:
+                        message = "Drones not available for loading."
+                        return {},message 
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
+            return {},message
