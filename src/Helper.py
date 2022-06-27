@@ -1,6 +1,7 @@
 from flask import jsonify, request, make_response
 import re
 import json
+from MySQLConnection import get_conexion
 
 
 class Helper:
