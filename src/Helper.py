@@ -24,4 +24,28 @@ class Helper:
             return drones,message
         except Exception as e:
             message="An exception occurred: {}".format(str(e))
+            return {},message
+        
+    def helper_get_battery_capacity(self, request_json):
+        try:
+            if "serial_number" not in request_json or type(request_json["serial_number"]) is not str or len(request_json["serial_number"])>100:
+                message = "The serial_number field is required, it must be of type str and have a maximum of 100 characters."
+                return {},message     
+            else:
+                with self.mysql.cursor() as cursor:
+                    sql = """SELECT battery_capacity FROM drone
+                    WHERE serial_number = '{}'""".format(request_json["serial_number"])
+                    cursor.execute(sql)
+                    response=cursor.fetchone()
+                    if response is None or response == 0:                   
+                        self.mysql.close()   
+                        message = "Drone not found."
+                        return {},message
+                    else:   
+                        self.mysql.close()
+                        drone = {"battery_capacity":response[0]}
+                        message = "Drone battery capacity."
+                        return drone,message
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
             return {},message    
