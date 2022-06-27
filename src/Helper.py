@@ -132,3 +132,41 @@ class Helper:
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
             return False,message  
+    
+    def helper_update_drone(self,request_json,serial_number):
+        try:
+            if "model" not in request_json or "weight_limit" not in request_json or "battery_capacity" not in request_json or "state" not in request_json:
+                message = "All fields are required to update."
+                return False,message     
+            elif "model" in request_json and type(request_json["model"]) is not str:
+                message = "The model field must be of type str."
+                return False,message      
+            elif "weight_limit" in request_json and type(request_json["weight_limit"]) is not int:
+                message = "The weight_limit field must be of type int."
+                return False,message      
+            elif "battery_capacity" in request_json and type(request_json["battery_capacity"]) is not int:
+                message = "The battery_capacity field must be of type int."
+                return False,message      
+            elif "state" in request_json and type(request_json["state"]) is not str:
+                message = "The battery_capacity field must be of type str."
+                return False,message      
+            else:
+                with self.mysql.cursor() as cursor:
+                    sql = """UPDATE drone SET model = '{0}',weight_limit = {1},battery_capacity = {2},state = '{3}' 
+                    WHERE serial_number = '{4}'""".format(request_json["model"],request_json["weight_limit"],
+                                                        request_json["battery_capacity"],request_json["state"],serial_number)
+                    cursor.execute(sql)
+                    response=cursor.rowcount
+                    if response is None or response == 0:                   
+                        self.mysql.close()   
+                        message = "Drone not found or has already been updated."
+                        return False,message 
+                    else:   
+                        self.mysql.commit()
+                        self.mysql.close()
+                        message = "The drone has been upgraded."
+                        return True,message
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
+            return False,message
+        
