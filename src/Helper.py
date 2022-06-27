@@ -48,4 +48,25 @@ class Helper:
                         return drone,message
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
-            return {},message    
+            return {},message  
+        
+    def helper_get_drone(self, serial_number):
+        try:
+            response=[]
+            with self.mysql.cursor() as cursor:
+                sql = """SELECT serial_number,model,weight_limit,battery_capacity,state 
+                FROM drone where serial_number = '{}'""".format(serial_number)
+                cursor.execute(sql)
+                response=cursor.fetchone() 
+                if response != None:
+                    drone = {"serial_number":response[0], "model":response[1],"weight_limit":response[2],"battery_capacity":response[3],"state":response[4]}
+                    self.mysql.close()
+                    message="Drone found."
+                    return drone,message
+                else:  
+                    self.mysql.close()
+                    message="Drone not found."
+                    return {},message
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
+            return {},message  

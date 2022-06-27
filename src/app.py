@@ -29,6 +29,19 @@ def get_battery_capacity():
     except Exception as e:
         return make_response(jsonify({"message":"An exception occurred: {}".format(str(e))}), 400)
     
+@app.route("/drones/<serial_number>", methods=['GET'])
+def get_drone(serial_number):
+    try:
+        conexion=get_conexion()
+        _helper=Helper(conexion)
+        drone,message=_helper.helper_get_drone(serial_number) 
+        if len(drone)>0:
+            return make_response(jsonify({"drone":drone,"message":message}), 200)
+        else:
+            return make_response(jsonify({"message":message}), 400)   
+    except Exception as e:
+        return make_response(jsonify({"message":"An exception occurred: {}".format(str(e))}), 400)
+    
 def page_not_found(error):
     return "<h1>The page you are trying to access does not exist...</h1>", 404
 
