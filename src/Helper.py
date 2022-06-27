@@ -170,3 +170,42 @@ class Helper:
             message = "An exception occurred: {}".format(str(e))
             return False,message
         
+    def helper_register_medication(self,request_json):
+        try:
+            name_ex=r"(^[a-zA-Z0-9_-]+$)"
+            code_ex=r"(^[A-Z0-9_]+$)"
+            if "name" not in request_json or type(request_json["name"]) is not str or len(request_json["name"])==0:
+                message = "The name field is required, it must be of type str and not be empty."
+                return False,message      
+            elif "weight" not in request_json or type(request_json["weight"]) is not int or request_json["weight"]==0:
+                message = "The weight field is required, it must be of type int and not be empty."
+                return False,message      
+            elif "code" not in request_json or type(request_json["code"]) is not str or len(request_json["code"])==0:
+                message = "The code field is required, it must be of type str and not be empty."
+                return False,message      
+            elif re.match(name_ex, request_json["name"]) is None:
+                message = "In the field name allowed only letters, numbers, ‘-‘, ‘_’."
+                return False,message      
+            elif re.match(code_ex, request_json["code"]) is None:
+                message = "In the field code allowed only upper case letters, underscore and numbers."
+                return False,message       
+            else:
+                with self.mysql.cursor() as cursor:
+                    sql = "SELECT * FROM medication WHERE code = '{}'".format(request_json["code"])
+                    cursor.execute(sql)
+                    response=cursor.fetchone()
+                    if response == 0 or response is None:
+                        sql = """INSERT INTO medication (name,weight,code) 
+                        VALUES ('{0}',{1},'{2}')""".format(request_json["name"],request_json["weight"],
+                                                                request_json["code"])
+                        cursor.execute(sql)
+                        self.mysql.commit()
+                        self.mysql.close()
+                        message="Registered medication."
+                        return True,message
+                    else:
+                        message = "The medication with code '{}' exists in DB.".format(request_json["code"])
+                        return False,message
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
+            return False,message
