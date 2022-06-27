@@ -254,3 +254,46 @@ class Helper:
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
             return {},message
+        
+    def helper_loading_drone(self, request_json):
+        try: 
+            if "loads_list" not in request_json or type(request_json['loads_list']) is not str or len(request_json['loads_list']) in (0,2):
+                message = "The loads_list field is required, it must be of type str and not be empty."
+                return {},message
+            if "loaded_drone" not in request_json or type(request_json['loaded_drone']) is not str or len(request_json['loaded_drone']) in (0,2):
+                message = "The loaded_drone field is required, it must be of type str and not be empty."
+                return {},message 
+            send_data={"medication_codes":request_json['loads_list']}
+            drone,message=self.helper_get_available_drones(send_data) 
+            if len(drone)==0:
+                return {},message   
+            else:
+                loaded_weight=drone['weight_load'] 
+                loaded_drone=request_json['loaded_drone']
+                loads_list=drone['available_drones']
+                drones_list=[drones['serial_number'] for drones in loads_list] 
+                if loaded_drone in drones_list:                    
+                    self.mysql=get_conexion()
+                    with self.mysql.cursor() as cursor:
+                        sql = """INSERT INTO load_register (loads_list,loaded_drone,loaded_weight) 
+                        VALUES ('{0}','{1}',{2})""".format(request_json['loads_list'], loaded_drone, loaded_weight)
+                        cursor.execute(sql)
+                        sql = "UPDATE drone SET state = 'LOADED' WHERE serial_number = '{}'".format(loaded_drone)
+                        cursor.execute(sql)
+                        response=cursor.rowcount
+                        if response is not None and response!=0:
+                            self.mysql.commit()
+                            self.mysql.close()   
+                            message = "Load completed."
+                            return True,message
+                        else:
+                            self.mysql.close()   
+                            message = "It is not possible to update the status of the drone to LOADED."
+                            return True,message
+                            
+                else:
+                    message = "The sent drone is not available. The drones available are: {}".format(str(', '.join(drones_list)))
+                    return False,message            
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
+            return {},message
