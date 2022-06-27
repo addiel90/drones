@@ -69,4 +69,43 @@ class Helper:
                     return {},message
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
-            return {},message  
+            return {},message
+        
+    def helper_register_drone(self,request_json):
+        try:
+            if "serial_number" not in request_json or type(request_json["serial_number"]) is not str or len(request_json["serial_number"])>100:
+                message = "The serial_number field is required, it must be of type str and have a maximum of 100 characters."
+                return False,message      
+            elif "weight_limit" not in request_json or type(request_json["weight_limit"]) is not int or request_json["weight_limit"]>500:
+                message = "The weight_limit field is required, it must be of type int and should be a maximum of 500 gr."
+                return False,message      
+            elif "model" not in request_json or type(request_json["model"]) is not str or len(request_json["model"])>50:
+                message = "The model field is required, it must be of type str and have a maximum of 50 characters."
+                return False,message      
+            elif "battery_capacity" not in request_json or type(request_json["battery_capacity"]) is not int or request_json["battery_capacity"]>100:
+                message = "The battery_capacity field is required, it must be of type int and have a maximum of 100 %."
+                return False,message      
+            elif "state" not in request_json or type(request_json["state"]) is not str:
+                message = "The state field is required and it must be of type str."
+                return False,message      
+            else:
+                with self.mysql.cursor() as cursor:
+                    sql = "SELECT * FROM drone WHERE serial_number = '{}'".format(request_json["serial_number"])
+                    cursor.execute(sql)
+                    response=cursor.fetchone()
+                    if response == 0 or response is None:
+                        sql = """INSERT INTO drone (serial_number,model,weight_limit,battery_capacity,state) 
+                        VALUES ('{0}','{1}',{2},{3},'{4}')""".format(request_json["serial_number"],request_json["model"],
+                                                                request_json["weight_limit"],request_json["battery_capacity"],
+                                                                request_json["state"].upper())
+                        cursor.execute(sql)
+                        self.mysql.commit()
+                        self.mysql.close()
+                        message="Registered drone."
+                        return True,message
+                    else:
+                        message = "The drone with serial_number '{}' exists in DB.".format(request_json["serial_number"])
+                        return False,message
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
+            return False,message  
