@@ -297,3 +297,44 @@ class Helper:
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
             return {},message
+        
+    def helper_get_loaded_medication(self, request_json):
+        try:
+            if "drone_id" not in request_json or type(request_json["drone_id"]) is not str or len(request_json["drone_id"])==0:
+                message = "The drone_id field is required, it must be of type str and not be empty."
+                return {},message,False     
+            else:
+                with self.mysql.cursor() as cursor:
+                    sql = """SELECT loads_list,loaded_weight FROM load_register
+                    WHERE loaded_drone = '{}'""".format(request_json["drone_id"])
+                    cursor.execute(sql)
+                    response=cursor.fetchone()
+                    if response is None or response == 0:                   
+                        self.mysql.close()   
+                        message = "Load register not found for the drone: '{}'".format(request_json['drone_id'])
+                        return {},message,False
+                    else:
+                        loaded_weight=int(response[1])
+                        medication_list=list(json.loads(response[0])) 
+                        medication_tuple=tuple(medication_list) 
+                        print(medication_list)
+                        print(medication_tuple)
+                        sql = """SELECT name,weight,code FROM medication
+                        WHERE code in {}""".format(str(medication_tuple))
+                        cursor.execute(sql)
+                        response=cursor.fetchall()
+                        print(response)
+                        medications=[]
+                        if len(response)>0:
+                            for row in response:
+                                medication = {"name":row[0], "weight":row[1],"code":row[2]}
+                                medications.append(medication)
+                            self.mysql.close()
+                            message = "Loaded medication items for the drone: '{}'".format(str(request_json['drone_id']))
+                            return medications,message,loaded_weight
+                        else:
+                            message = "Loaded Medication Items not found."
+                            return medications,message,False
+        except Exception as e:
+            message = "An exception occurred: {}".format(str(e))
+            return {},message

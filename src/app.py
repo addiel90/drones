@@ -126,6 +126,20 @@ def loading_drone():
     except Exception as e:
         return make_response(jsonify({"message":"An exception occurred: {}".format(str(e))}), 400)
     
+@app.route("/medication/loaded", methods=['GET'])
+def loaded_medication():
+    try:
+        request_json=request.json
+        conexion=get_conexion()
+        _helper=Helper(conexion)
+        medication,message,loaded_weight=_helper.helper_get_loaded_medication(request_json)
+        if len(medication)>0 and loaded_weight:
+            return make_response(jsonify({"loaded_medication":medication,"loaded_weight":loaded_weight,"message":message}), 200)
+        else:
+            return make_response(jsonify({"message":message}), 400) 
+    except Exception as e:
+        return make_response(jsonify({"message":"An exception occurred: {}".format(str(e))}), 400)
+    
 def page_not_found(error):
     return "<h1>The page you are trying to access does not exist...</h1>", 404
 
