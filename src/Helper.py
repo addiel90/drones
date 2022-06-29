@@ -250,7 +250,8 @@ class Helper:
                         message = "Available drones for loading."
                         return drone,message
                     else:
-                        message = "Drones not available for loading."
+                        message = "Drones not available for loading. "                        
+                        message += "Weight total for loading: {}gr.".format(str(weight_total))
                         return {},message 
         except Exception as e:
             message = "An exception occurred: {}".format(str(e))
